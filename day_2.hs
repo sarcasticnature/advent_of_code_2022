@@ -1,6 +1,5 @@
 import System.Environment (getArgs)
 import System.IO
-import Data.Char (isAlphaNum,isSpace)
 
 main = do
     filename_list <- getArgs
@@ -8,7 +7,7 @@ main = do
     contents <- readFile filename
     putStr $ show $ tallyGames $ splitGames contents
 
-data Choice = Rock | Paper | Scissors deriving (Eq)
+data Choice = Rock | Paper | Scissors deriving (Eq, Show)
 
 instance Ord Choice where
     compare Rock x = case x of
@@ -49,12 +48,29 @@ winPoints order
     | order == EQ = 3
     | order == GT = 6
 
+decodeOrder :: Char -> Ordering
+decodeOrder char
+    | char == 'X' = LT
+    | char == 'Y' = EQ
+    | char == 'Z' = GT
+
+pickChoice :: Choice -> Ordering -> Choice
+pickChoice choice rightOrder
+    | rightOrder == rockOrder = Rock
+    | rightOrder == paperOrder = Paper
+    | rightOrder == scissorsOrder = Scissors
+    where
+        rockOrder = compare Rock choice
+        paperOrder = compare Paper choice
+        scissorsOrder = compare Scissors choice
+
 scoreGame :: Int -> String -> Int
 scoreGame acc str =
     let opponent = decodeChoice $ head str
-        self = decodeChoice $ last str
+        order = decodeOrder $ last str
+        self = pickChoice opponent order
         choicePts = choicePoints self
-        winPts = winPoints $ self `compare` opponent
+        winPts = winPoints order
     in  acc + choicePts + winPts
 
 tallyGames :: [String] -> Int
