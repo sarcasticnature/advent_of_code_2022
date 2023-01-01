@@ -7,12 +7,6 @@ main = do
     contents <- readFile filename
     print $ numTrue $ map (isPartiallyOverlapping . parseAssignment) $ lines contents
 
--- could use the standard library isInfixOf instead (it's probably better)
---isSublist :: Eq a => [a] -> [a] -> Bool
---isSublist needle [] = False
---isSublist needle stack =
---    (needle == take (length needle) stack) || isSublist needle (tail stack)
-
 data Assignment = Assignment { start1 :: Int
                              , end1 :: Int
                              , start2 :: Int
