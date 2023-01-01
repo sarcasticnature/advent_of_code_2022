@@ -72,7 +72,7 @@ moveCrates crateList (Command count from to) =
     let fromStack = crateList !! (from - 1)
         toStack = crateList !! (to - 1)
         popped = drop count fromStack
-        pushed = reverse (take count fromStack) ++ toStack
+        pushed = take count fromStack ++ toStack
         crateList' = setInList (from - 1) popped crateList
     in  setInList (to - 1) pushed crateList'
 
