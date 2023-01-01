@@ -6,22 +6,16 @@ main = do
     filename_list <- getArgs
     let filename = head filename_list
     contents <- readFile filename
-    print $ findStartPacket contents
+    print $ findStartPacket 4 contents
 
-unique4 :: (Char,Char,Char,Char) -> Bool
-unique4 (x,y,z,w) =
-    (x /= y) && (x /= z) && (x /= w) && (y /= z) && (y /= w) && (z /= w)
+findUniques :: Int -> (String, Int) -> Char -> (String, Int)
+findUniques n (str, i) c
+    | length str > n = (str, i)
+    | length str == n = if unique str
+                            then (c:str, i)
+                            else (c : init str, i + 1)
+    | otherwise = (c:str, i + 1)
+    where unique (x:y:z:w:_) = (x /= y) && (x /= z) && (x /= w) && (y /= z) && (y /= w) && (z /= w)
 
-findStartPacket :: String -> Int
-findStartPacket xs =
-    let ys = tail xs
-        zs = tail ys
-        ws = tail zs
-        packetZip = zip4 xs ys zs ws
-    in  length (takeWhile (not . unique4) packetZip) + 4
-
-debug xs =
-    let ys = tail xs
-        zs = tail ys
-        ws = tail zs
-    in  zip4 xs ys zs ws
+findStartPacket :: Int -> String -> Int
+findStartPacket n xs = index where (acc, index) = foldl (findUniques n) ([], 0) xs
