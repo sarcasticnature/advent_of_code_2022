@@ -5,7 +5,7 @@ main = do
     filename_list <- getArgs
     let filename = head filename_list
     contents <- readFile filename
-    print $ numTrue $ map (isFullyOverlapping . parseAssignment) $ lines contents
+    print $ numTrue $ map (isPartiallyOverlapping . parseAssignment) $ lines contents
 
 -- could use the standard library isInfixOf instead (it's probably better)
 --isSublist :: Eq a => [a] -> [a] -> Bool
@@ -32,6 +32,12 @@ parseAssignment str =
 isFullyOverlapping :: Assignment -> Bool
 isFullyOverlapping (Assignment s1 e1 s2 e2) =
     (s1 <= s2) && (e1 >= e2) || (s2 <= s1) && (e2 >= e1)
+
+isPartiallyOverlapping :: Assignment -> Bool
+isPartiallyOverlapping (Assignment s1 e1 s2 e2) =
+    let overlap1 = (e1 >= s2) && (s1 <= s2)
+        overlap2 = (e2 >= s1) && (s2 <= s1)
+    in  overlap1 || overlap2
 
 numTrue :: [Bool] -> Int
 numTrue = length . filter id
