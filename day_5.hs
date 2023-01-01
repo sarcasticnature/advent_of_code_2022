@@ -5,13 +5,13 @@ main = do
     filename_list <- getArgs
     let filename = head filename_list
     contents <- readFile filename
-    print $ parseInput $ lines contents
+    print $ map head $ processCommands $ parseInput $ lines contents
 
 -- Parsing stuff
 
 data Command = Command { count :: Int
-                       , start :: Int
-                       , end :: Int
+                       , from :: Int
+                       , to :: Int
                        } deriving (Show)
 
 type CrateStack = [Char]
@@ -60,3 +60,21 @@ parseInput xs =
 
 -- Algorithm stuff
 
+setInList :: Int -> a -> [a] -> [a]
+setInList i x ys =
+    let front = take i ys
+        back = drop (i + 1) ys
+    in  front ++ [x] ++ back
+
+-- did I mention I hate indexing from 1?
+moveCrates :: CrateList -> Command -> CrateList
+moveCrates crateList (Command count from to) =
+    let fromStack = crateList !! (from - 1)
+        toStack = crateList !! (to - 1)
+        popped = drop count fromStack
+        pushed = reverse (take count fromStack) ++ toStack
+        crateList' = setInList (from - 1) popped crateList
+    in  setInList (to - 1) pushed crateList'
+
+processCommands :: (CrateList, [Command]) -> CrateList
+processCommands (crateList, commandList) = foldl moveCrates crateList commandList
