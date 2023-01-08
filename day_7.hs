@@ -6,16 +6,18 @@ main = do
     filename_list <- getArgs
     let filename = head filename_list
     contents <- readFile filename
-    print $ lines contents
+    print $ parseInput $ lines contents
 
 -- Data
 type FSSize = Int
 type FSName = String
 data FSData = File FSName FSSize
             | Dir FSName [FSData]
-            deriving (Show)
+            deriving (Show,Eq)
 
-data FSParent = Parent FSName [FSData] deriving (Show)
+data FSParent = Parent { name :: FSName
+                       , files :: [FSData]
+                       } deriving (Show)
 type FSParents = [FSParent]
 type FSZipper = (FSParents, FSData)
 
@@ -67,10 +69,25 @@ parseFSDataLine line =
 --        foldFn acc line = parseFSDataLine line : acc
 --    in  foldl' foldFn [] dataLines
 
+ascend :: FSZipper -> Maybe FSZipper
+ascend ([], _) = Nothing
+ascend (p:ps, fsData) = Just (ps, Dir (name p) (fsData:files p))
+
 cd :: FSZipper -> CDCommand -> Maybe FSZipper
-cd (parents, fsData) GoToRoot = Nothing
-cd (parents, fsData) Ascend = Nothing
-cd (parents, Dir d ss) (Descend subdir) = Nothing
+cd z@([], Dir n fs) GoToRoot = if n == "/" then Just z else Nothing
+cd z GoToRoot = case ascend z of
+    Just z' -> cd z' GoToRoot
+    Nothing -> Nothing
+cd z Ascend = ascend z
+cd (ps, Dir n fs) (Descend subdir)
+    | length matches == 1 = Just (ps', Dir subdir newfs)
+    | otherwise = Nothing
+    where
+        matches = [(n, fs') | (Dir n fs') <- fs, n == subdir]
+        newfs = snd $ head matches
+        rest = [f | f <- fs, f /= Dir subdir newfs]
+        ps' = Parent n rest : ps
+
 cd _ _ = Nothing
 
 -- TODO: use updated parseFSDataLine (which would return Maybe FSData
