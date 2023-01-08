@@ -6,7 +6,7 @@ main = do
     filename_list <- getArgs
     let filename = head filename_list
     contents <- readFile filename
-    print $ reverse $ testParseFSDataLine $ lines contents
+    print $ lines contents
 
 -- Data
 type FSSize = Int
@@ -31,16 +31,18 @@ data FSCommand = CD CDCommand
 isFSCommand :: String -> Bool
 isFSCommand = (==) '$' . head
 
-parseCommandLine :: String -> FSCommand
+parseCommandLine :: String -> Maybe FSCommand
 parseCommandLine line = case words line of
-    [_, cmd]     -> LS
-    [_, cmd, dir] -> getCDCommand dir
+    [_, cmd]      -> if cmd == "ls" then Just LS else Nothing
+    [_, cmd, dir] -> if cmd == "cd" then Just (getCDCommand dir) else Nothing
+    _             -> Nothing
     where
         getCDCommand dir
             | dir == "/" = CD GoToRoot
             | dir == ".." = CD Ascend
             | otherwise = CD (Descend dir)
 
+-- TODO: make this return Maybe FSData to handle bad input
 parseFSDataLine :: String -> FSData
 parseFSDataLine line =
     if dir
@@ -52,14 +54,50 @@ parseFSDataLine line =
         name = last xs
         size = read $ head xs
 
-testParseCmd :: [String] -> [FSCommand]
-testParseCmd lines =
-    let cmdLines = filter isFSCommand lines
-        foldFn acc cmd = parseCommandLine cmd : acc
-    in  foldl' foldFn [] cmdLines
+--testParseCmd :: [String] -> [FSCommand]
+--testParseCmd lines =
+--    let cmdLines = filter isFSCommand lines
+--        foldFn acc cmdLine = case parseCommandLine cmdLine of Just cmd -> cmd:acc
+--                                                              Nothing  -> acc
+--    in  foldl' foldFn [] cmdLines
+--
+--testParseFSDataLine :: [String] -> [FSData]
+--testParseFSDataLine lines =
+--    let dataLines = filter (not . isFSCommand) lines
+--        foldFn acc line = parseFSDataLine line : acc
+--    in  foldl' foldFn [] dataLines
 
-testParseFSDataLine :: [String] -> [FSData]
-testParseFSDataLine lines =
-    let dataLines = filter (not . isFSCommand) lines
+cd :: FSZipper -> CDCommand -> Maybe FSZipper
+cd (parents, fsData) GoToRoot = Nothing
+cd (parents, fsData) Ascend = Nothing
+cd (parents, Dir d ss) (Descend subdir) = Nothing
+cd _ _ = Nothing
+
+-- TODO: use updated parseFSDataLine (which would return Maybe FSData
+parseLS :: FSZipper -> [String] -> Maybe (FSZipper, [String])
+parseLS (_, File _ _) _ = Nothing
+parseLS (parents, Dir name ys) xs =
+    let (ds, xs') = break isFSCommand xs
         foldFn acc line = parseFSDataLine line : acc
-    in  foldl' foldFn [] dataLines
+        dataList = foldl' foldFn [] ds
+        dir = Dir name (dataList ++ ys)
+    in  Just ((parents, dir), xs')
+
+munchInputLines :: FSZipper -> [String] -> Maybe (FSZipper, [String])
+munchInputLines zipper [] = Just (zipper, [])   -- careful: this could lead to an infinite loop
+munchInputLines zipper (x:xs) = case parseCommandLine x of
+    Nothing       -> Nothing
+    Just LS       -> parseLS zipper xs
+    Just (CD cmd) -> case cd zipper cmd of Just zipper' -> Just (zipper', xs)
+                                           Nothing      -> Nothing
+
+parseInput :: [String] -> Maybe FSZipper
+parseInput xs =
+    let parse :: FSZipper -> [String] -> Maybe FSZipper
+        parse zipper [] = Just zipper
+        parse zipper ys = case munchInputLines zipper ys of
+            Just (zipper', zs) -> parse zipper' zs
+            Nothing            -> Nothing
+    in  parse ([], Dir "/" []) xs
+
+-- algorithm
