@@ -6,8 +6,9 @@ main = do
     filename_list <- getArgs
     let filename = head filename_list
     contents <- readFile filename
+    --print $ fmap (sumSmallDirs 100000) $ parseInput $ lines contents
     --print $ fmap debugZipper $ parseInput $ lines contents
-    print $ fmap (sumSmallDirs 100000) $ parseInput $ lines contents
+    print $ fmap (minimumDeleteDirSize 70000000 30000000) $ parseInput $ lines contents
 
 -- Data
 data FileSystem a = File String a
@@ -125,6 +126,14 @@ sumSmallDirs :: Int -> FSZipper -> Int
 sumSmallDirs max z = case cd z GoToRoot of
     Nothing           -> 0
     Just (_, rootDir) -> sum $ filter (< max) $ getDirSizes rootDir
+
+minimumDeleteDirSize :: Int -> Int -> FSZipper -> Int
+minimumDeleteDirSize maxSize updateSize z = case cd z GoToRoot of
+    Nothing -> 0
+    Just (_, rootDir) -> let dirs = getDirSizes rootDir
+                             rootSize = head dirs
+                             minDirSize = updateSize - (maxSize - rootSize)
+                         in  minimum $ filter (> minDirSize) dirs
 
 -- debugging
 debugZipper z = case cd z GoToRoot of
