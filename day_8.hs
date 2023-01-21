@@ -7,6 +7,7 @@ main = do
     let filename = head filename_list
     contents <- readFile filename
     print $ countVisible $ removeHidden $ linesToTreePairs $ lines contents
+    --putStrLn $ prettyForest $ removeHidden $ linesToTreePairs $ lines contents
 
 type TreePair = (Bool, Char)
 
@@ -44,7 +45,7 @@ countVisible xs =
 
 -- debugging
 
-prettyForest :: [[TreePair]] -> [String]
+prettyForest :: [[TreePair]] -> String
 prettyForest xs =
     let foldFn acc (b, c) = if b then acc ++ [c] else acc ++ ['.']
-    in  map (foldl' foldFn []) xs
+    in  unlines $ map (foldl' foldFn []) xs
