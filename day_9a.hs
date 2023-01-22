@@ -59,7 +59,7 @@ moveTail r@(_,t) = case moves r of
     [m] -> moveEnd m t
     [m1, m2] -> moveEnd m2 $ moveEnd m1 t
 
---runMotions :: [Motion] -> PositionSet
+runMotions :: [Motion] -> PositionSet
 runMotions xs =
     let origin = ((0,0),(0,0), Set.empty)
         moveRope (h, t, s) m = (h', t', s')
